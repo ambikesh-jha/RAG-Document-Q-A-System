@@ -1,0 +1,7 @@
+Flask
+pdfplumber
+faiss-cpu
+sentence-transformers
+scikit-learn
+openai
+python-dotenv

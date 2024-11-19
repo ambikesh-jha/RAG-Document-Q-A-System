@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Q&A with PDF</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9f9f9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        #chat-container {
+            width: 90%;
+            max-width: 500px;
+            background: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 10px;
+            padding: 20px;
+        }
+        #messages {
+            max-height: 400px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 5px;
+            background-color: #fefefe;
+        }
+        #messages div {
+            margin-bottom: 10px;
+        }
+        #messages .user {
+            text-align: right;
+        }
+        #messages .bot {
+            text-align: left;
+        }
+        form {
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"], textarea {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div id="chat-container">
+        <div id="messages">
+            <div class="bot">Hi! I’m your PDF Q&A assistant. Upload a PDF to get started.</div>
+        </div>
+        <form id="chat-form" enctype="multipart/form-data">
+            <input type="text" id="user-input" placeholder="Type a message or upload a file..." />
+            <button type="button" id="upload-btn">Upload</button>
+            <button type="submit">Send</button>
+        </form>
+        <input type="file" id="file-input" style="display:none;" />
+    </div>
+
+    <script>
+        const messagesDiv = document.getElementById("messages");
+        const userInput = document.getElementById("user-input");
+        const uploadBtn = document.getElementById("upload-btn");
+        const fileInput = document.getElementById("file-input");
+        const chatForm = document.getElementById("chat-form");
+
+        let uploadedFileName = null;
+
+        const addMessage = (text, sender) => {
+            const message = document.createElement("div");
+            message.className = sender;
+            message.textContent = text;
+            messagesDiv.appendChild(message);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight; // Scroll to the latest message
+        };
+
+        // Handle file upload
+        uploadBtn.addEventListener("click", () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener("change", () => {
+            const file = fileInput.files[0];
+            if (file) {
+                const formData = new FormData();
+                formData.append("file", file);
+                addMessage(`Uploading: ${file.name}`, "user");
+
+                fetch("/upload", {
+                    method: "POST",
+                    body: formData,
+                })
+                    .then((response) => {
+                        if (response.ok) {
+                            uploadedFileName = file.name;
+                            addMessage("File uploaded successfully! You can now ask questions.", "bot");
+                        } else {
+                            addMessage("Failed to upload the file. Please try again.", "bot");
+                        }
+                    })
+                    .catch(() => {
+                        addMessage("Error during upload. Please check your network.", "bot");
+                    });
+            }
+        });
+
+        // Handle text input
+        chatForm.addEventListener("submit", (event) => {
+            event.preventDefault();
+            const userText = userInput.value.trim();
+
+            if (!userText) return;
+
+            addMessage(userText, "user");
+            userInput.value = "";
+
+            if (!uploadedFileName) {
+                addMessage("Please upload a PDF file first.", "bot");
+                return;
+            }
+
+            fetch("/ask", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ question: userText, filename: uploadedFileName }),
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    if (data.answer) {
+                        addMessage(data.answer.toString(), "bot"); // Ensure proper string conversion
+                    } else {
+                        addMessage("Sorry, I couldn’t find an answer to your question.", "bot");
+                    }
+                })
+                .catch((error) => {
+                    addMessage("An error occurred. Please try again.", "bot");
+                    console.error("Error:", error);
+                });
+        });
+
+
+
+
+        // chatForm.addEventListener("submit", (event) => {
+        //     event.preventDefault();
+        //     const userText = userInput.value.trim();
+
+        //     if (!userText) return;
+
+        //     addMessage(userText, "user");
+        //     userInput.value = "";
+
+        //     if (!uploadedFileName) {
+        //         addMessage("Please upload a PDF file first.", "bot");
+        //         return;
+        //     }
+
+        //     fetch("/ask", {
+        //         method: "POST",
+        //         headers: {
+        //             "Content-Type": "application/json",
+        //         },
+        //         body: JSON.stringify({ question: userText, filename: uploadedFileName }),
+        //     })
+        //         .then((response) => response.json())
+        //         .then((data) => {
+        //             if (data.answer) {
+        //                 addMessage(data.answer, "bot");
+        //             } else {
+        //                 addMessage("Sorry, I couldn’t find an answer to your question.", "bot");
+        //             }
+        //         })
+        //         .catch((error) => {
+        //             addMessage("An error occurred. Please try again.", "bot");
+        //             console.error("Error:", error);
+        //         });
+        // });
+
+    </script>
+</body>
+</html>
