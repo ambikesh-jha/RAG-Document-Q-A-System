@@ -1,3 +1,9 @@
 # Talk-to-Doc
-Project where you upload a PDF, ask questions about its content, and get answers from the document 
-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
+Project where you upload a PDF or Doc, ask questions about its content, and get answers from the document
+
+steps :
+1. make the virtual envirnment
+2. install the required requirements : 
+    pip install -r requirements.txt
+    pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+3.
